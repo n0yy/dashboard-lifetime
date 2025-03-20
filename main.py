@@ -2,12 +2,18 @@ import gspread
 import pandas as pd
 import time
 import streamlit as st
+import json
 from google.oauth2.service_account import Credentials
 
 # --- Constants ---
 SHEET_ID = "14d7-QMAdXBvCtVO-XKqHGZdtl6HrthCb2tqQoUXPOCk"
 MACHINE_OPTIONS = ["ILAPAK", "SIG"]
 STATUS_OPTIONS = ["Semua", "Segera Jadwalkan Penggantian", "Segera Lakukan Pemesanan"]
+
+# --- Setup Page ---
+st.set_page_config(
+    page_title="Dashboard Database Lifetime Machine", page_icon=":eye:", layout="wide"
+)
 
 
 # --- Helper Functions ---
@@ -19,9 +25,8 @@ def get_date_info():
 def setup_google_sheets():
     """Setup and return Google Sheets client"""
     scopes = ["https://www.googleapis.com/auth/spreadsheets"]
-    credential = Credentials.from_service_account_file(
-        "credentials.json", scopes=scopes
-    )
+    credentials_dict = st.secrets["spreadsheet"]
+    credential = Credentials.from_service_account_info(credentials_dict, scopes=scopes)
     client = gspread.authorize(credential)
     return client.open_by_key(SHEET_ID)
 
@@ -30,6 +35,8 @@ def load_worksheet_data(sheet, worksheet_name):
     """Load data from a specific worksheet"""
     worksheet = sheet.worksheet(worksheet_name)
     data = worksheet.get_all_values()
+    if len(data) < 2:
+        return pd.DataFrame()
     headers = data[1]
     rows = data[2:]
     return pd.DataFrame(rows, columns=headers)
@@ -79,10 +86,8 @@ def filter_vital_parts(df, status_filter):
     vital_df = df[
         (df["Category"] == "Vital") & (df["STATUS"].str.contains("Segera", na=False))
     ]
-
     if status_filter != "Semua":
         vital_df = vital_df[vital_df["STATUS"].str.contains(status_filter, na=False)]
-
     return vital_df
 
 
@@ -123,19 +128,17 @@ def render_vital_parts_section(df, machine):
 
     # Menerapkan filter pencarian
     if query_search:
-        # Konversi query dan kolom-kolom yang akan dicari ke lowercase
         query_lower = query_search.lower()
-        # Filter berdasarkan mesin atau kode part (sesuaikan nama kolom jika berbeda)
         vital_df = vital_df[
-            vital_df["Mesin"].str.lower().str.contains(query_lower, na=False)
-            | vital_df["Kode Part"].str.lower().str.contains(query_lower, na=False)
+            vital_df[["Mesin", "Kode Part"]]
+            .apply(lambda x: x.str.lower().str.contains(query_lower, na=False))
+            .any(axis=1)
         ]
 
     if not vital_df.empty:
         st.markdown(
             f"**Menampilkan {len(vital_df)} item Vital dan Urgent untuk {machine}**"
         )
-
         with st.container():
             render_vital_parts_list(vital_df)
     else:
@@ -148,7 +151,6 @@ def render_vital_parts_list(vital_df):
     """Render list of vital parts"""
     for _, row in vital_df.iterrows():
         status_icon = "🟡" if row["STATUS"] == "Segera Lakukan Pemesanan" else "🔴"
-
         with st.expander(
             f"{status_icon} {row['Mesin']} - {row['Kode Part']} - {row['Part']}"
         ):
@@ -156,7 +158,6 @@ def render_vital_parts_list(vital_df):
             st.markdown(
                 f"**Penggantian Selanjutnya:** :calendar: {row['Penggantian Selanjutnya']}"
             )
-
             col1, col2 = st.columns(2)
             with col1:
                 st.markdown(f"**Quantity:** 📦 {row['Qty']}")
@@ -167,36 +168,17 @@ def render_vital_parts_list(vital_df):
                     f"**Penggantian Terakhir:** 🛠️ {row['Penggantian Terakhir']}"
                 )
 
-                for field, icon in [
-                    ("Reorder Min", ""),
-                    ("On Hand", "✅ "),
-                    ("Leadtime (Hari)", "🚚 "),
-                ]:
-                    if field in row and row[field]:
-                        suffix = " hari" if field == "Leadtime (Hari)" else ""
-                        st.markdown(f"**{field}:** {icon}{row[field]}{suffix}")
-
 
 def main():
     """Main application function"""
-    # Setup
     date_info = get_date_info()
     sheet = setup_google_sheets()
     all_data = load_all_data(sheet)
 
-    # Page configuration
-    st.set_page_config("Dashboard Database Lifetime Machine :eye:", layout="wide")
-
-    # Render sidebar
     render_sidebar(date_info)
-
-    # Machine selection
     machine = st.selectbox(label="Pilih Jenis Mesin", options=MACHINE_OPTIONS)
-
-    # Get and prepare data for selected machine
     df = prepare_dataframe(all_data[machine])
 
-    # Render dashboard sections
     render_kpi_section(df, machine, date_info)
     render_vital_parts_section(df, machine)
 
