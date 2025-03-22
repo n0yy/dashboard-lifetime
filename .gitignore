@@ -2,3 +2,4 @@
 notebooks
 .env
 secrets.toml
+__pycache__
