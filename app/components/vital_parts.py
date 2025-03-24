@@ -15,7 +15,7 @@ def render_vital_parts_section(
         machine: Machine name
         status_options: List of status filter options
     """
-    st.subheader(f"Notifikasi Prioritas - {machine}")
+    st.subheader(f"Urgent Notification - {machine}")
 
     col_filter, col_space = st.columns([1, 3])
     with col_filter:
@@ -46,9 +46,7 @@ def render_vital_parts_section(
         ]
 
     if not vital_df.empty:
-        st.markdown(
-            f"**Menampilkan {len(vital_df)} item Vital dan Urgent untuk {machine}**"
-        )
+        st.markdown(f"**Menampilkan {len(vital_df)} item Sparepart {machine}**")
         with st.container():
             _render_vital_parts_list(vital_df)
     else:
