@@ -46,7 +46,7 @@ def render_vital_parts_section(
         ]
 
     if not vital_df.empty:
-        st.markdown(f"**Menampilkan {len(vital_df)} item Sparepart {machine}**")
+        st.markdown(f"**Menampilkan {len(vital_df)} item Sparepart**")
         with st.container():
             _render_vital_parts_list(vital_df)
     else:
