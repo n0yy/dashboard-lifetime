@@ -29,6 +29,10 @@ def calculate_kpis(
             "Nilai": f"{len(df['Part'].unique())} part",
         },
         {
+            "KPI": f"Sparepart Critical",
+            "Nilai": f"{sum(df['Category'].str.contains('Vital', na=False))} part",
+        },
+        {
             "KPI": "Part akan diganti bulan ini",
             "Nilai": f"{sum(df['Penggantian Selanjutnya'].str.contains(date_info['month'], na=False))} part",
         },

@@ -13,18 +13,19 @@ def render_sidebar(machine_options: List[str], date_info: Dict[str, str]) -> str
         Selected machine type
     """
     with st.sidebar:
-        # st.image("../assets/logo_b7.png")
+        st.image("app/assets/logo_b7.png")
 
         # Machine selection
+
+        # Navigation menu
+        st.markdown("### Menu Navigasi")
         machine_type = st.selectbox(
             label="Lifetime",
+            label_visibility="hidden",
             placeholder="Pilih Jenis Mesin",
             options=machine_options,
             index=0,
         )
-
-        # Navigation menu
-        st.markdown("### Menu Navigasi")
         st.page_link("main.py", label="Kanban")
         st.page_link("main.py", label="Monitoring Expense")
         st.page_link("main.py", label="Kolaborasi CKG dan PG")
