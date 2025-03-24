@@ -85,7 +85,7 @@ def render_machine_data(
                     st.plotly_chart(fig, use_container_width=True)
 
                     # Tampilkan dataframe
-                    st.dataframe(df)
+                    st.dataframe(df_overdue)
                 else:
                     st.warning("Dataframe kosong, tidak ada data yang ditampilkan.")
             else:
