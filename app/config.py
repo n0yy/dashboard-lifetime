@@ -5,7 +5,11 @@ SHEET_ID = "14d7-QMAdXBvCtVO-XKqHGZdtl6HrthCb2tqQoUXPOCk"
 MACHINE_OPTIONS = ["ILAPAK", "SIG", "CHIMEI", "JINSUNG", "UNIFILL"]
 
 # Status filter options
-STATUS_OPTIONS = ["Semua", "Segera Jadwalkan Penggantian", "Segera Lakukan Pemesanan"]
+STATUS_OPTIONS = [
+    "Semua",
+    "Melewati Jadwal Penggantian",
+    "Segera Jadwalkan Penggantian",
+]
 
 # Required columns for dataframe
 REQUIRED_COLUMNS = [

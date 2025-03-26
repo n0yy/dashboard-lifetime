@@ -61,10 +61,7 @@ def filter_vital_parts(df: pd.DataFrame, status_filter: str) -> pd.DataFrame:
         return df
 
     # Filter based on "Vital" category and "Segera" status
-    vital_df = df[
-        (df["Category"].str.contains("Vital", case=False, na=False))
-        & (df["STATUS"].str.contains("Segera", na=False))
-    ]
+    vital_df = df[(df["Category"].str.contains("Vital", case=False, na=False))]
 
     # Additional filter based on selected status
     if status_filter != "Semua":
