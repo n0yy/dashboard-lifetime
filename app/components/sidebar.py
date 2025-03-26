@@ -26,9 +26,9 @@ def render_sidebar(machine_options: List[str], date_info: Dict[str, str]) -> str
             options=machine_options,
             index=0,
         )
-        st.page_link("main.py", label="Kanban")
-        st.page_link("main.py", label="Monitoring Expense")
-        st.page_link("main.py", label="Kolaborasi CKG dan PG")
-        st.page_link("main.py", label="CMMS")
+        st.page_link("../main.py", label="Kanban")
+        st.page_link("../main.py", label="Monitoring Expense")
+        st.page_link("../main.py", label="Kolaborasi CKG dan PG")
+        st.page_link("../main.py", label="CMMS")
 
     return machine_type
