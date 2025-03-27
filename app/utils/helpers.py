@@ -74,3 +74,35 @@ def filter_vital_parts(
         ]
 
     return vital_df
+
+
+def convert_days_to_readable(days):
+    """
+    Convert total days into a readable format of years, months, and days.
+
+    Args:
+    days (int): Total number of days
+
+    Returns:
+    str: Formatted string with years, months, and days
+    """
+    # Calculate years
+    years = days // 365
+    remaining_days = days % 365
+
+    # Calculate months
+    months = remaining_days // 30
+    days_left = remaining_days % 30
+
+    # Create the formatted string
+    parts = []
+    if years > 0:
+        parts.append(f"{years} tahun" if years == 1 else f"{years} tahun")
+    if months > 0:
+        parts.append(f"{months} bulan" if months == 1 else f"{months} bulan")
+    if days_left > 0:
+        parts.append(f"{days_left} hari" if days_left == 1 else f"{days_left} hari")
+
+    parts.append("lagi")
+    # Join the parts or return 0 hari if no time has passed
+    return " ".join(parts) if parts else "0 hari"

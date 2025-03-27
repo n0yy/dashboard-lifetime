@@ -2,6 +2,7 @@ import pandas as pd
 import streamlit as st
 from typing import Dict, List
 from utils.helpers import get_date_info
+from utils.helpers import convert_days_to_readable
 
 
 def calculate_kpis(
@@ -103,8 +104,9 @@ def render_kpi_section(
 
             df_part = df[df["Jadwal Penggantian"] > 0].sort_values("Jadwal Penggantian")
             df_part["Jadwal Penggantian"] = (
-                df_part["Jadwal Penggantian"].astype(str).str.split(".").str[0]
-                + " Hari lagi"
+                df_part["Jadwal Penggantian"]
+                .astype(int)
+                .apply(convert_days_to_readable)
             )
             df_part = df_part[["Part", "Jadwal Penggantian"]]
             df_part.index = range(1, len(df_part) + 1)
