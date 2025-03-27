@@ -14,23 +14,25 @@ from data.loaders import DataLoader
 from components.sidebar import render_sidebar
 from components.kpi import render_kpi_section
 from components.vital_parts import render_vital_parts_section
+from typing import List
+
+
+@st.cache_data(ttl=3600)
+def prepare_cached_dataframe(
+    machine_data: pd.DataFrame, required_columns: List[str]
+) -> pd.DataFrame:
+    """Cached version of prepare_dataframe to reduce computation."""
+    return prepare_dataframe(machine_data, required_columns)
 
 
 def render_machine_data(
     df: pd.DataFrame, date_info: dict, status_options: list
 ) -> None:
-    """Render data for one machine.
-
-    Args:
-        df: Machine dataframe
-        date_info: Dictionary with date information
-        status_options: List of status filter options
-    """
+    """Render data for one machine with optimized rendering."""
     if df.empty:
         st.warning("Tidak ada data untuk mesin ini.")
         return
 
-    # Extract unique machines from data
     machines = [m for m in df["Mesin"].unique() if m]
 
     if not machines:
@@ -38,7 +40,6 @@ def render_machine_data(
         render_kpi_section(df, "Tidak Ada Data", date_info)
         return
 
-    # Create tab for each machine
     tabs = st.tabs([machine for machine in machines + ["VISUALISASI"]])
 
     for tab, machine in zip(tabs, machines + ["VISUALISASI"]):
@@ -46,45 +47,34 @@ def render_machine_data(
             if machine == "VISUALISASI":
                 st.subheader("Visualisasi Part Overdue")
                 if not df.empty:
-                    # Filter data untuk status "Segera Jadwalkan Penggantian"
-                    df_overdue = df[
-                        df["STATUS"].str.contains(
-                            "Segera Jadwalkan Penggantian", na=False
-                        )
-                    ]
-
-                    # Agregasi data: hitung jumlah part untuk setiap mesin
+                    df_overdue = df[df["STATUS"].str.contains("Melewati", na=False)]
+                    df_overdue = df_overdue.drop_duplicates(subset=["Part"])
                     df_overdue_agg = (
                         df_overdue.groupby("Mesin")
                         .agg(Jumlah_Part=("Part", "count"))
                         .reset_index()
                     )
 
-                    # Urutkan dari besar ke kecil berdasarkan kolom "Jumlah_Part"
                     df_overdue_agg = df_overdue_agg.sort_values(
                         by="Jumlah_Part", ascending=False
                     )
 
-                    # Buat bar chart menggunakan Plotly Express
                     fig = px.bar(
                         df_overdue_agg,
                         x="Mesin",
                         y="Jumlah_Part",
                         title="Jumlah Part Overdue per Mesin",
                         labels={"Jumlah_Part": "Jumlah Part", "Mesin": "Mesin"},
-                        text="Jumlah_Part",  # Menampilkan nilai di atas bar
+                        text="Jumlah_Part",
                     )
 
-                    # Update layout untuk meningkatkan tampilan
-                    fig.update_traces(textposition="outside")  # Posisi teks di luar bar
+                    fig.update_traces(textposition="outside")
                     fig.update_layout(
                         xaxis_title="Mesin", yaxis_title="Jumlah Part", showlegend=False
                     )
 
-                    # Tampilkan chart menggunakan Streamlit
                     st.plotly_chart(fig, use_container_width=True)
 
-                    # Tampilkan dataframe
                     st.dataframe(df_overdue)
                 else:
                     st.warning("Dataframe kosong, tidak ada data yang ditampilkan.")
@@ -94,14 +84,20 @@ def render_machine_data(
                 render_vital_parts_section(df_selected, machine, status_options)
 
 
+@st.cache_data(ttl=3600)
+def cached_get_date_info():
+    """Cached version of get_date_info."""
+    return get_date_info()
+
+
 def main() -> None:
-    """Main application function."""
+    """Main application function with optimized data handling."""
     try:
         # Configure the page
         st.set_page_config(**PAGE_CONFIG)
         st.title("Dashboard Monitoring Sparepart")
 
-        # Get date info
+        # Get cached date info
         date_info = get_date_info()
 
         # Render sidebar and get selected machine
@@ -113,7 +109,8 @@ def main() -> None:
 
         # Check if data exists for the selected machine
         if selected_machine in all_data:
-            df = prepare_dataframe(all_data[selected_machine], REQUIRED_COLUMNS)
+            # Use cached dataframe preparation
+            df = prepare_cached_dataframe(all_data[selected_machine], REQUIRED_COLUMNS)
             render_machine_data(df, date_info, STATUS_OPTIONS)
         else:
             st.error(f"Data untuk mesin {selected_machine} tidak tersedia.")

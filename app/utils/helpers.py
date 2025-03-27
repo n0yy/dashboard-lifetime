@@ -9,7 +9,7 @@ def get_date_info() -> Dict[str, str]:
     Returns:
         Dict with today's date and current month
     """
-    return {"today": time.strftime("%Y-%m-%d"), "month": time.strftime("%Y-%m")}
+    return {"today": time.strftime("%d-%m-%Y"), "month": time.strftime("%Y-%m")}
 
 
 def prepare_dataframe(df: pd.DataFrame, required_columns: List[str]) -> pd.DataFrame:
@@ -47,7 +47,9 @@ def prepare_dataframe(df: pd.DataFrame, required_columns: List[str]) -> pd.DataF
     return df_copy
 
 
-def filter_vital_parts(df: pd.DataFrame, status_filter: str) -> pd.DataFrame:
+def filter_vital_parts(
+    df: pd.DataFrame, status_filter: str, category_filter: str
+) -> pd.DataFrame:
     """Filter vital and urgent parts based on status.
 
     Args:
@@ -60,11 +62,15 @@ def filter_vital_parts(df: pd.DataFrame, status_filter: str) -> pd.DataFrame:
     if df.empty:
         return df
 
-    # Filter based on "Vital" category and "Segera" status
-    vital_df = df[(df["Category"].str.contains("Vital", case=False, na=False))]
+    vital_df = df.copy()
 
     # Additional filter based on selected status
     if status_filter != "Semua":
         vital_df = vital_df[vital_df["STATUS"].str.contains(status_filter, na=False)]
+
+    if category_filter != "Semua":
+        vital_df = vital_df[
+            vital_df["Category"].str.contains(category_filter, na=False)
+        ]
 
     return vital_df

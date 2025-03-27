@@ -16,13 +16,20 @@ def render_vital_parts_section(
         status_options: List of status filter options
     """
     st.subheader(f"Urgent Notification - {machine}")
-
-    col_filter, col_space = st.columns([1, 3])
+    st.markdown("#### Filter")
+    col_filter, col_category, col_space = st.columns([1, 1, 3])
     with col_filter:
         status_filter = st.selectbox(
-            "Filter berdasarkan STATUS",
+            "Status",
             options=status_options,
             key=f"status_filter_{machine}",
+        )
+
+    with col_category:
+        category_filter = st.selectbox(
+            "Kategori",
+            options=["Semua", "Vital", "Essential", "Desirable"],
+            key=f"category_filter_{machine}",
         )
 
     with col_space:
@@ -33,7 +40,8 @@ def render_vital_parts_section(
         )
 
     # Apply status filter
-    vital_df = filter_vital_parts(df, status_filter)
+    vital_df = filter_vital_parts(df, status_filter, category_filter)
+    vital_df = vital_df.drop_duplicates(subset=["Part"])
 
     # Apply search filter
     if query_search:
@@ -61,7 +69,7 @@ def _render_vital_parts_list(vital_df: pd.DataFrame) -> None:
     """
     for _, row in vital_df.iterrows():
         status = row.get("STATUS", "")
-        status_icon = "🟡" if "Segera Lakukan Pemesanan" in status else "🔴"
+        status_icon = "🔵" if "Segera Jadwalkan Penggantian" in status else "🔴"
 
         with st.expander(
             f"{status_icon} {row.get('Mesin', 'N/A')} - {row.get('Kode Part', 'N/A')} - {row.get('Part', 'N/A')}"

@@ -6,7 +6,7 @@ from typing import Dict, List
 
 
 class DataLoader:
-    """Handles loading data from Google Sheets."""
+    """Handles loading data from Google Sheets with caching."""
 
     def __init__(self, sheet_id: str, machine_options: List[str]):
         """Initialize the data loader.
@@ -17,13 +17,13 @@ class DataLoader:
         """
         self.sheet_id = sheet_id
         self.machine_options = machine_options
-        self.sheet = self._setup_google_sheets()
 
-    def _setup_google_sheets(self):
-        """Set up and return Google Sheets client.
+    @st.cache_resource
+    def get_sheet_client(_self):
+        """Create and cache the Google Sheets client.
 
         Returns:
-            Google Sheet instance
+            Authorized Google Sheets client
         """
         scopes = ["https://www.googleapis.com/auth/spreadsheets"]
         credentials_dict = st.secrets["spreadsheet"]
@@ -31,10 +31,11 @@ class DataLoader:
             credentials_dict, scopes=scopes
         )
         client = gspread.authorize(credential)
-        return client.open_by_key(self.sheet_id)
+        return client
 
-    def _load_worksheet_data(self, worksheet_name: str) -> pd.DataFrame:
-        """Load data from a specific worksheet.
+    @st.cache_data(ttl=3600)  # Cache for 1 hour
+    def load_worksheet_data(_self, worksheet_name: str) -> pd.DataFrame:
+        """Load data from a specific worksheet with caching.
 
         Args:
             worksheet_name: Name of the worksheet
@@ -43,10 +44,14 @@ class DataLoader:
             DataFrame containing worksheet data
         """
         try:
-            worksheet = self.sheet.worksheet(worksheet_name)
+            client = _self.get_sheet_client()
+            sheet = client.open_by_key(_self.sheet_id)
+            worksheet = sheet.worksheet(worksheet_name)
             data = worksheet.get_all_values()
+
             if len(data) < 2:
                 return pd.DataFrame()
+
             headers = data[1]
             rows = data[2:]
             return pd.DataFrame(rows, columns=headers)
@@ -55,19 +60,16 @@ class DataLoader:
             return pd.DataFrame()
 
     def load_all_data(self) -> Dict[str, pd.DataFrame]:
-        """Load data for all machine types.
-
-        Returns:
-            Dictionary mapping machine types to DataFrames
-        """
         data_frames = {}
-        available_worksheets = [ws.title for ws in self.sheet.worksheets()]
+        available_worksheets = (
+            self.get_sheet_client().open_by_key(self.sheet_id).worksheets()
+        )
+        worksheet_titles = [ws.title for ws in available_worksheets]
 
         for machine in self.machine_options:
-            if machine in available_worksheets:
-                data_frames[machine] = self._load_worksheet_data(machine)
+            if machine in worksheet_titles:
+                data_frames[machine] = self.load_worksheet_data(machine)
             else:
-                # Create empty DataFrame if worksheet not found
                 data_frames[machine] = pd.DataFrame()
                 st.warning(f"Worksheet for {machine} not found.")
 
