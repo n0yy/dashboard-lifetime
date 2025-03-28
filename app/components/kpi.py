@@ -102,7 +102,10 @@ def render_kpi_section(
             today = pd.to_datetime(date_info["today"], format="%d-%m-%Y")
             df["Jadwal Penggantian"] = (df["Penggantian Selanjutnya"] - today).dt.days
 
-            df_part = df[df["Jadwal Penggantian"] > 0].sort_values("Jadwal Penggantian")
+            df_part = df[
+                (df["Jadwal Penggantian"] > 0) & (df["Jadwal Penggantian"] > 7)
+            ].sort_values("Jadwal Penggantian")
+
             df_part["Jadwal Penggantian"] = (
                 df_part["Jadwal Penggantian"]
                 .astype(int)
